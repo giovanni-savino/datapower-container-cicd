@@ -1,74 +1,66 @@
 apiVersion: datapower.ibm.com/v1beta3
 kind: DataPowerService
 metadata:
-    labels:
-        app.kubernetes.io/instance: gw-col-quickstart
-        app.kubernetes.io/managed-by: datapower-operator
-        app.kubernetes.io/name: quickstart
-        app.kubernetes.io/part-of: ibm-datapower-quickstart
-    name: quickstart
-    namespace: gw-col
+  creationTimestamp: '2023-05-15T22:27:54Z'
+  generation: 11
+  labels:
+    app.kubernetes.io/instance: gw-col-quickstart
+    app.kubernetes.io/managed-by: datapower-operator
+    app.kubernetes.io/name: quickstart
+    app.kubernetes.io/part-of: ibm-datapower-quickstart
 spec:
-    createServiceBinding: automatic
-    domains:
-    -   name: default
-        dpApp:
-          config:
-            - default-cfg
-          local:
-            - default-local
-    -   dpApp:
-            config:
-            - apiconnect-cfg
-        name: apiconnect
-    -   dpApp:
-            config:
-            - unip-cfg
-        name: unip
-    healthCheck:
-        logLevel: info
-        probe:
-            port: 7879
-        watchdog:
-            enabled: true
-            hardTimeoutSeconds: 80
-            softTimeoutSeconds: 60
-    imagePullPolicy: IfNotPresent
-    license:
-        accept: true
-        license: L-RJON-CCAT5F
-        use: nonproduction
-    livenessProbe:
-        failureThreshold: 3
-        httpGet:
-            path: /healthz
-            port: 7879
-            scheme: HTTP
-        initialDelaySeconds: 10
-        periodSeconds: 5
-        successThreshold: 1
-        timeoutSeconds: 5
-    podManagementPolicy: Parallel
-    readinessProbe:
-        failureThreshold: 3
-        httpGet:
-            path: /healthz
-            port: 7879
-            scheme: HTTP
-        initialDelaySeconds: 10
-        periodSeconds: 5
-        successThreshold: 1
-        timeoutSeconds: 5
-    replicas: 1
-    resources:
-        limits:
-            memory: 4Gi
-        requests:
-            cpu: '1'
-            memory: 4Gi
-    terminationGracePeriodSeconds: 30
-    users:
-    -   accessLevel: privileged
-        name: admin
-        passwordSecret: admin-credentials
-    version: 10.5-lts
+  license:
+    accept: true
+    license: L-RJON-CCAT5F
+    use: nonproduction
+  resources:
+    limits:
+      memory: 4Gi
+    requests:
+      cpu: '1'
+      memory: 4Gi
+  readinessProbe:
+    failureThreshold: 3
+    httpGet:
+      path: /healthz
+      port: 7879
+      scheme: HTTP
+    initialDelaySeconds: 10
+    periodSeconds: 5
+    successThreshold: 1
+    timeoutSeconds: 5
+  users:
+    - accessLevel: privileged
+      name: admin
+      passwordSecret: admin-credentials
+  terminationGracePeriodSeconds: 30
+  healthCheck:
+    logLevel: info
+    probe:
+      port: 7879
+    watchdog:
+      enabled: true
+      hardTimeoutSeconds: 80
+      softTimeoutSeconds: 60
+  createServiceBinding: automatic
+  livenessProbe:
+    failureThreshold: 3
+    httpGet:
+      path: /healthz
+      port: 7879
+      scheme: HTTP
+    initialDelaySeconds: 10
+    periodSeconds: 5
+    successThreshold: 1
+    timeoutSeconds: 5
+  domains:
+    - dpApp:
+        config:
+          - default-cfg
+        local:
+          - default-local
+      name: default
+  imagePullPolicy: IfNotPresent
+  version: 10.5-lts
+  podManagementPolicy: Parallel
+  replicas: 1
