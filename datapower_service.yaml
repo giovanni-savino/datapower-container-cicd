@@ -11,16 +11,15 @@ metadata:
 spec:
     createServiceBinding: automatic
     domains:
-    -   dpApp:
-            config:
-            - default-cfg
-            local:
-            - default-local
-        name: default
+    - default
     -   dpApp:
             config:
             - apiconnect-cfg
         name: apiconnect
+    -   dpApp:
+            config:
+            - unip-cfg
+        name: unip
     healthCheck:
         logLevel: info
         probe:

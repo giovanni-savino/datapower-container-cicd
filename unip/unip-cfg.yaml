@@ -1,0 +1,7 @@
+apiVersion: v1
+data:
+  unip.cfg: ""
+kind: ConfigMap
+metadata:
+  creationTimestamp: null
+  name: unip-cfg
