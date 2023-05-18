@@ -16,7 +16,7 @@ spec:
           config:
             - default-cfg
           local:
-            - local-cfg
+            - default-local
     -   dpApp:
             config:
             - apiconnect-cfg
