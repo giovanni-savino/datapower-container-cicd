@@ -11,7 +11,12 @@ metadata:
 spec:
     createServiceBinding: automatic
     domains:
-    - default
+    -   name: default
+        dpApp:
+          config:
+            - default-cfg
+          local:
+            - local-cfg
     -   dpApp:
             config:
             - apiconnect-cfg
