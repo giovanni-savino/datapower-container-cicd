@@ -1,22 +1,26 @@
 apiVersion: datapower.ibm.com/v1beta3
 kind: DataPowerService
 metadata:
-    creationTimestamp: '2023-05-15T22:27:54Z'
-    generation: 11
     labels:
         app.kubernetes.io/instance: gw-col-quickstart
         app.kubernetes.io/managed-by: datapower-operator
         app.kubernetes.io/name: quickstart
         app.kubernetes.io/part-of: ibm-datapower-quickstart
+    name: quickstart
+    namespace: gw-col
 spec:
     createServiceBinding: automatic
     domains:
+    -   name: default
+        dpApp:
+          config:
+            - default-cfg
+          local:
+            - default-local
     -   dpApp:
             config:
-            - default-cfg
-            local:
-            - default-local
-        name: default
+            - apiconnect-cfg
+        name: apiconnect
     -   dpApp:
             config:
             - unip-cfg
