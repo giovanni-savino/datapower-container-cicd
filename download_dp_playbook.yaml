@@ -1,0 +1,158 @@
+---
+- name: Migrating a DataPower domain
+  hosts: localhost
+  connection: local
+  gather_facts: no
+  collections:
+  - kubernetes.core
+  vars_prompt:
+    - name: domain
+      prompt: "What is the domain name to export?"
+      private: false
+
+  vars:
+    - DPDevUrl: rest-gw-dev.itzroks-310000c4fc-93eowc-6ccd7f378ae819553d37d5f2ee142bd6-0000.eu-gb.containers.appdomain.cloud
+    - repo_url: https://github.com/giovanni-savino/datapower-container-cicd
+    - zip_url: /tmp/{{ domain }}_unzipped
+    - git_url: "{{ zip_url }}/git"
+  tasks:
+  - debug:
+      msg: "Exporting datapower domain {{ domain }} from cluster {{DPDevUrl }}"
+      
+  - name: Removing old directory
+    ansible.builtin.file:
+      path: /tmp/{{ domain }}_unzipped
+      state: absent
+
+  - name: Creating tmp directory
+    ansible.builtin.file:
+      path: "{{zip_url }}"
+      state: directory
+      mode: '0755'
+
+  - name: Exporting the domain {{ domain }} from Dev environment
+    uri:
+      url: https://{{ DPDevUrl }}/mgmt/actionqueue/{{ domain }}
+      method: POST
+      dest: "{{zip_url }}/DPRest.json"
+      body_format: json
+      body: '{"ExportAPIGWConfig":{}}'
+      validate_certs: no
+      user: "admin"
+      password: "admin"
+      force_basic_auth: true
+
+  - name: Reading json and creating a zip
+    shell: cat {{zip_url }}/DPRest.json | jq -r .Configuration | base64 --decode > /tmp/DPRest.zip 
+  
+  - name: Unzip file
+    ansible.builtin.unarchive:
+      src: /tmp/DPRest.zip
+      dest: "{{ zip_url }}"
+  
+  - name: Check if local exists
+    stat:
+      path: "{{ zip_url }}/local"
+    register: local_exists
+
+  - name: Creating tar.gz of local
+    archive:
+      path: "{{zip_url }}/local"
+      dest: "{{ zip_url }}/{{ domain}}-local.tar.gz"
+      format: gz
+    when: local_exists.stat.exists
+
+  - name: Creating -cfg configmap
+    shell: kubectl create configmap {{ domain | lower }}-cfg --from-file="{{zip_url }}/config/{{ domain }}.cfg" --dry-run="client" --output="yaml" > {{zip_url }}/{{ domain }}-cfg.yaml
+
+  - name: Creating -local configmap
+    shell: kubectl create configmap {{ domain | lower }}-local --from-file="{{zip_url }}/{{ domain}}-local.tar.gz" --dry-run="client" --output="yaml" > {{zip_url }}/{{ domain }}-local.yaml
+    when: local_exists.stat.exists
+
+  - name: Creating git directory
+    ansible.builtin.file:
+      path: /tmp/{{ domain }}_unzipped/git
+      state: directory
+      mode: '0755'
+
+  - name: Clone git repo
+    ansible.builtin.git:
+      repo: "{{ repo_url }}"
+      dest: "{{ git_url }}"
+      clone: yes
+      update: yes
+  
+  - name: Check if {{ domain }} exists
+    stat:
+      path: "{{ git_url }}/{{ domain }}"
+    register: domain_exists
+
+  - name: Creating domain directory if does not exits
+    ansible.builtin.file:
+      path: "{{ git_url }}/{{ domain }}"
+      state: directory
+      mode: '0755'
+    when: domain_exists.stat.exists == False
+
+  - name: Check if domain exists in the datapower service
+    shell: cat {{ git_url }}/datapower_service.yaml
+    register: result
+
+  - name: Parse yaml into variable
+    set_fact:
+      my_yaml: "{{ result.stdout | from_yaml }}"
+
+  - name: See all the domains  in the in the datapower service
+    set_fact: 
+      domains: "{{ domains | default([]) | union([item.name]) }}"
+      domains_yaml: "{{ domains | default([]) | union([item]) }}"
+    with_items: "{{ my_yaml.spec.domains}}"
+  
+  - name: Add domain if does not exists
+    set_fact:
+      my_yaml: "{{ my_yaml | combine(newdata, recursive=true) }}"
+    vars: 
+      newdata:
+        spec:
+          domains: "{{ domains_yaml | union(newdomain) }}"
+      newdomain:
+          - name: "{{ domain }}"
+            dpApp:
+              config:
+                - "{{ domain }}-cfg"
+    when: "domain not in {{ domains }}"   
+          
+  - name: Update the datapower service yaml file
+    copy:
+      content: '{{ my_yaml | to_nice_yaml }}'
+      dest: "{{ git_url }}/datapower_service.yaml"
+    when: "domain not in {{ domains }}"
+  
+  - name: Move file in the directory
+    shell: mv {{ zip_url }}/*.yaml {{ git_url }}/{{ domain }}
+  - name: Read git credential
+    shell: cat /tmp/git_token
+    register: git_token
+
+  - name: Pushing files on git repo
+    ansible.builtin.shell: |
+      git config --global user.name "giovanni-savino"
+      git config --global user.email "giovanni.savino@it.ibm.com"
+      git config --global user.password {{ git_token }}
+      git add -A && git commit -m "Added domain: {{ domain }}: Automated Commit by Ansible  "
+      git push
+    args:
+      chdir: "{{ git_url }}/{{ domain }}"
+    ignore_errors: true
+    register: output
+    failed_when: >
+      output.msg != "" and
+      ("error" in output.msg or
+      "conflict" in output.msg or
+      "Errno" in output.msg or
+      "fatal" in output.msg or
+      (output.stdout != "" and
+      "nothing to commit, working tree clean" not in output.stdout) or
+      (output.stderr != ""))
+
+

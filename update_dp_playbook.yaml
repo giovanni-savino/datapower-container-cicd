@@ -1,0 +1,70 @@
+---
+- name: Updating DataPower domain in the test namespace
+  hosts: localhost
+  connection: local
+  gather_facts: no
+  vars_prompt:
+    - name: domain
+      prompt: "What is the domain name to update?"
+      private: false
+  vars:
+    - repo_url: https://github.com/giovanni-savino/datapower-container-cicd
+    - zip_url: /tmp/{{ domain }}_unzipped
+    - git_url: "{{ zip_url }}/git"
+    - test_namespace: gw-col
+  collections:
+  - kubernetes.core
+
+  tasks:
+  - debug:
+      msg: "Updating datapower domain {{ domain }} on namespace {{ test_namespace }}"
+  - name: Removing old directory
+    ansible.builtin.file:
+      path: /tmp/{{ domain }}_unzipped
+      state: absent
+
+  - name: Creating tmp directory
+    ansible.builtin.file:
+      path: "{{zip_url }}"
+      state: directory
+      mode: '0755'
+
+  - name: Creating git directory
+    ansible.builtin.file:
+      path: "{{git_url }}"
+      state: directory
+      mode: '0755'
+
+  - name: Clone git repo
+    ansible.builtin.git:
+      repo: "{{ repo_url }}"
+      dest: "{{git_url }}"
+      clone: yes
+      update: yes
+
+  - name: Check if domain has been exported
+    stat:
+      path: "{{ git_url }}/{{ domain }}"
+
+  - name: Update the cfg configmap 
+    k8s:
+        namespace: "{{ test_namespace }}"
+        src: "{{ git_url }}/{{ domain }}/{{ domain }}-cfg.yaml"
+        state: present
+  - name: Check if local configmap exists
+    stat:
+      path: "{{ git_url }}/{{ domain }}/{{ domain }}-local.yaml"
+    register: local_exists
+
+  - name: Update the local configmap 
+    k8s:
+        namespace: "{{ test_namespace }}"
+        src: "{{ git_url }}/{{ domain }}/{{ domain }}-cfd.yaml"
+        state: present
+    when: local_exists.stat.exists
+  
+  - name: Update the datapower service 
+    k8s:
+        namespace: "{{ test_namespace }}"
+        src: "{{ git_url }}/datapower_service.yaml"
+        state: present
