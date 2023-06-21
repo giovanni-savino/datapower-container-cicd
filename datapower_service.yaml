@@ -23,7 +23,7 @@ spec:
         name: apiconnect
     -   dpApp:
             config:
-            - unip-cfg
+            - uni-cfg
         name: unip
     healthCheck:
         logLevel: info
