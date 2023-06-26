@@ -29,5 +29,6 @@ In order to use Tower you need to:
 
 * Configure OCP credential in the tower
 * Configure the git credential in the tower
+* Add the kubernetes collection to the tower
 
 https://docs.ansible.com/ansible-tower/latest/html/userguide/credentials.html#openshift-or-kubernetes-api-bearer-token
