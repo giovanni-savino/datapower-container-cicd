@@ -1,5 +1,12 @@
 ---
-- name: Get gateway pods
-  community.kubernetes.k8s:
-    kind: Pod
-    namespace: gw-dev
+- name: Get Openshift Pods from gw-dev namespace
+  hosts: localhost
+  gather_facts: no
+  collections: 
+    - community.kubernetes
+  
+  tasks:
+  - name: Get gateway pods
+    community.kubernetes.k8s:
+      kind: Pod
+      namespace: gw-dev
