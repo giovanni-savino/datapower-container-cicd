@@ -23,6 +23,16 @@ The second ansible script update_dp_playbook.yaml:
 * apply the 2 kubernetes configmap
 * Apply the  datapower service yaml  on the second namespace
 
+
+To run the first you can
+1. clone this git repo
+```
+git clone https://github.com/giovanni-savino/datapower-container-cicd.git
+```
+2. Run the first ansible playbook
+```
+ansible-playbook ansible/update_dp_playbook.yaml 
+```
 ## Using Ansible Tower
 
 In order to use Tower you need to:

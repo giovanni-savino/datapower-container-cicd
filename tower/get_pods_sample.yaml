@@ -7,6 +7,9 @@
   
   tasks:
   - name: Get gateway pods
-    community.kubernetes.k8s:
+    kubernetes.core.k8s_info:
       kind: Pod
       namespace: gw-dev
+    register: pod_list
+  - debug:
+      var: pod_list.resources 
