@@ -3,8 +3,9 @@ Example of updating Datapower in container with Ansible script
 
 In order to update the Datapower, you need to:
 
-* Deploy a first Datapower on a OCP namespace (eg dp-svil) and expose the REST API
-* Deploy the second Datapower in a second namespace (eg dp-col)
+## Using Ansible
+* Deploy a first Datapower on a OCP namespace (eg gw-dev) and expose the REST API
+* Deploy the second Datapower in a second namespace (eg gw-col)
 * On the local machine you need to install the following packages:
 * Ansible, git, oc/kubectl, jq
 
@@ -22,3 +23,11 @@ The second ansible script update_dp_playbook.yaml:
 * apply the 2 kubernetes configmap
 * Apply the  datapower service yaml  on the second namespace
 
+## Using Ansible Tower
+
+In order to use Tower you need to:
+
+* Configure OCP credential in the tower
+* Configure the git credential in the tower
+
+https://docs.ansible.com/ansible-tower/latest/html/userguide/credentials.html#openshift-or-kubernetes-api-bearer-token

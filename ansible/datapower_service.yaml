@@ -24,7 +24,7 @@ spec:
     -   dpApp:
             config:
             - uni-cfg
-        name: unip
+        name: uni
     healthCheck:
         logLevel: info
         probe:
