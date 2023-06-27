@@ -4,12 +4,14 @@
   gather_facts: no
   collections: 
     - community.kubernetes
-  
+  vars:
+    namespace: 
+    
   tasks:
   - name: Get gateway pods
     kubernetes.core.k8s_info:
       kind: Pod
-      namespace: gw-dev
+      namespace: '{{ namespace }}'
     register: pod_list
   - debug:
       var: pod_list.resources 
