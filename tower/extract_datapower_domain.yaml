@@ -1,0 +1,23 @@
+---
+- name: Get Openshift Pods from gw-dev namespace
+  hosts: localhost
+  gather_facts: no
+  collections: 
+    - community.kubernetes
+  vars:
+    - domain: 
+    - DPDevUrl: https://rest-interface-gw-dev.itzroks-310000c4fc-pcpta4-4b4a324f027aea19c5cbc0c3275c4656-0000.au-syd.containers.appdomain.cloud
+    - zip_url: /tmp
+    
+  tasks:
+  - name: Exporting the domain {{ domain }} from Dev environment
+    uri:
+      url: https://{{ DPDevUrl }}/mgmt/actionqueue/{{ domain }}
+      method: POST
+      dest: "{{ zip_url }}/DPRest.json"
+      body_format: json
+      body: '{"ExportAPIGWConfig":{}}'
+      validate_certs: no
+      user: "admin"
+      password: "admin"
+      force_basic_auth: true
