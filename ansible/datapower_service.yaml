@@ -18,13 +18,11 @@ spec:
           local:
             - default-local
     -   dpApp:
-            config:
-            - apiconnect-cfg
-        name: apiconnect
-    -   dpApp:
-            config:
-            - uni-cfg
-        name: uni
+          config:
+            - dp-sviluppo-cfg
+          local:
+            - dp-sviuppo-local
+        name: dp-sviluppo
     healthCheck:
         logLevel: info
         probe:
