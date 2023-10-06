@@ -11,7 +11,7 @@
       private: false
 
   vars:
-    - DPDevUrl: rest-gw-dev.itzroks-310000c4fc-93eowc-6ccd7f378ae819553d37d5f2ee142bd6-0000.eu-gb.containers.appdomain.cloud
+    - DPDevUrl: rest-gw-dev.itzroks-310000c4fc-y6drs8-6ccd7f378ae819553d37d5f2ee142bd6-0000.eu-de.containers.appdomain.cloud
     - repo_url: https://github.com/giovanni-savino/datapower-container-cicd
     - zip_url: /tmp/{{ domain }}_unzipped
     - git_url: "{{ zip_url }}/git"
@@ -55,6 +55,11 @@
       path: "{{ zip_url }}/local"
     register: local_exists
 
+  - name: Check if init cfg exists
+    stat:
+      path: "{{ zip_url }}/config/datapower-operator-{{ domain }}-init.cfg"
+    register: init_exists
+
   - name: Creating tar.gz of local
     archive:
       path: "{{zip_url }}/local"
@@ -63,10 +68,14 @@
     when: local_exists.stat.exists
 
   - name: Creating -cfg configmap
-    shell: kubectl create configmap {{ domain | lower }}-cfg --from-file="{{zip_url }}/config/{{ domain }}.cfg" --dry-run="client" --output="yaml" > {{zip_url }}/{{ domain }}-cfg.yaml
+    shell: kubectl create configmap {{ (domain) | replace('_','-') | lower }}-cfg --from-file="{{ zip_url }}/config/{{ domain }}.cfg" --dry-run="client" --output="yaml" > {{zip_url }}/{{ domain }}-cfg.yaml
+
+  - name: Creating init configmap
+    shell: kubectl create configmap datapower-operator-{{ (domain) | replace('_','-') | lower }}-init-cfg --from-file="{{ zip_url }}/config/datapower-operator-{{ domain }}-init.cfg" --dry-run="client" --output="yaml" > {{zip_url }}/datapower-operator-{{ domain }}-init-cfg.yaml
+    when: init_exists.stat.exists
 
   - name: Creating -local configmap
-    shell: kubectl create configmap {{ domain | lower }}-local --from-file="{{zip_url }}/{{ domain}}-local.tar.gz" --dry-run="client" --output="yaml" > {{zip_url }}/{{ domain }}-local.yaml
+    shell: kubectl create configmap {{ (domain) | replace('_','-') | lower }}-local --from-file="{{zip_url }}/{{ domain}}-local.tar.gz" --dry-run="client" --output="yaml" > {{zip_url }}/{{ domain }}-local.yaml
     when: local_exists.stat.exists
 
   - name: Creating git directory
@@ -95,7 +104,7 @@
     when: domain_exists.stat.exists == False
 
   - name: Check if domain exists in the datapower service
-    shell: cat {{ git_url }}/datapower_service.yaml
+    shell: cat {{ git_url }}/ansible/datapower_service.yaml
     register: result
 
   - name: Parse yaml into variable
@@ -134,25 +143,5 @@
     shell: cat /tmp/git_token
     register: git_token
 
-  - name: Pushing files on git repo
-    ansible.builtin.shell: |
-      git config --global user.name "giovanni-savino"
-      git config --global user.email "giovanni.savino@it.ibm.com"
-      git config --global user.password {{ git_token }}
-      git add -A && git commit -m "Added domain: {{ domain }}: Automated Commit by Ansible  "
-      git push
-    args:
-      chdir: "{{ git_url }}/{{ domain }}"
-    ignore_errors: true
-    register: output
-    failed_when: >
-      output.msg != "" and
-      ("error" in output.msg or
-      "conflict" in output.msg or
-      "Errno" in output.msg or
-      "fatal" in output.msg or
-      (output.stdout != "" and
-      "nothing to commit, working tree clean" not in output.stdout) or
-      (output.stderr != ""))
 
 
