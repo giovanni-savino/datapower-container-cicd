@@ -59,7 +59,7 @@
   - name: Update the local configmap 
     k8s:
         namespace: "{{ test_namespace }}"
-        src: "{{ git_url }}/{{ domain }}/{{ domain }}-cfd.yaml"
+        src: "{{ git_url }}/{{ domain }}/{{ domain }}-cfg.yaml"
         state: present
     when: local_exists.stat.exists
   

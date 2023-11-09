@@ -11,7 +11,7 @@
       private: false
 
   vars:
-    - DPDevUrl: rest-gw-dev.itzroks-310000c4fc-y6drs8-6ccd7f378ae819553d37d5f2ee142bd6-0000.eu-de.containers.appdomain.cloud
+    - DPDevUrl: rest-gw-dev.itzroks-310000c4fc-iyjsng-6ccd7f378ae819553d37d5f2ee142bd6-0000.eu-de.containers.appdomain.cloud
     - repo_url: https://github.com/giovanni-savino/datapower-container-cicd
     - zip_url: /tmp/{{ domain }}_unzipped
     - git_url: "{{ zip_url }}/git"
@@ -67,12 +67,31 @@
       format: gz
     when: local_exists.stat.exists
 
-  - name: Creating -cfg configmap
-    shell: kubectl create configmap {{ (domain) | replace('_','-') | lower }}-cfg --from-file="{{ zip_url }}/config/{{ domain }}.cfg" --dry-run="client" --output="yaml" > {{zip_url }}/{{ domain }}-cfg.yaml
+  - name: Find cfg files
+    find:
+        paths: "{{ zip_url }}/config"
+        file_type: file
+        recurse: Yes
+        patterns: "*.cfg"
+    register: config_files
 
-  - name: Creating init configmap
-    shell: kubectl create configmap datapower-operator-{{ (domain) | replace('_','-') | lower }}-init-cfg --from-file="{{ zip_url }}/config/datapower-operator-{{ domain }}-init.cfg" --dry-run="client" --output="yaml" > {{zip_url }}/datapower-operator-{{ domain }}-init-cfg.yaml
+  - name: Creating -cfg configmap
+    shell: kubectl create configmap {{ (domain) | replace('_','-') | lower }}-cfg-{{ item.path | basename | splitext | first }} --from-file="{{ item.path }}" --dry-run="client" --output="yaml" > {{zip_url }}/{{ item.path | basename | splitext | first  }}-cfg.yaml
+    loop: "{{ config_files.files|flatten(levels=1) }}"
+
+  - name: Removing init name in the init configmaps
+    ansible.builtin.replace:
+      path: "{{ zip_url }}/datapower-operator-{{ domain }}-init-cfg.yaml"
+      regexp: '-init.cfg'
+      replace: "-ini.cfg"
     when: init_exists.stat.exists
+  
+  - name: Removing init name in the main configmaps
+    ansible.builtin.replace:
+      path: "{{ zip_url }}/{{ domain }}-cfg.yaml"
+      regexp: '-init.cfg'
+      replace: "-ini.cfg"
+    when: init_exists.stat.exists 
 
   - name: Creating -local configmap
     shell: kubectl create configmap {{ (domain) | replace('_','-') | lower }}-local --from-file="{{zip_url }}/{{ domain}}-local.tar.gz" --dry-run="client" --output="yaml" > {{zip_url }}/{{ domain }}-local.yaml
