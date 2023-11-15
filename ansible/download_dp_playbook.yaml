@@ -11,7 +11,7 @@
       private: false
 
   vars:
-    - DPDevUrl: rest-gw-dev.itzroks-310000c4fc-iyjsng-6ccd7f378ae819553d37d5f2ee142bd6-0000.eu-de.containers.appdomain.cloud
+    - DPDevUrl: rest-gw-dev.xxxxx.eu-de.containers.appdomain.cloud
     - repo_url: https://github.com/giovanni-savino/datapower-container-cicd
     - zip_url: /tmp/{{ domain }}_unzipped
     - git_url: "{{ zip_url }}/git"
@@ -39,7 +39,7 @@
       body: '{"ExportAPIGWConfig":{}}'
       validate_certs: no
       user: "admin"
-      password: "admin"
+      password: "*****"
       force_basic_auth: true
 
   - name: Reading json and creating a zip
@@ -75,7 +75,25 @@
         patterns: "*.cfg"
     register: config_files
 
-  - name: Creating -cfg configmap
+  - name: Check configmaps size 
+    stat: 
+      path: "{{ zip_url }}/config/{{ item }}"
+    with_items: "{{ config_files.files }}"
+    register: files_size
+
+  - name: Print the var
+    debug:
+        msg: "Output: {{ item.item.size }}"
+    with_items: "{{ files_size.results }}"
+
+  - name: Request user confirmation to proceed in case downtime could not be set
+    pause:
+      prompt: 'Configmap  {{ item.item.path }} exceed 250 KB. Do you want to proceed? Press return to continue. Press Ctrl+c and then "a" to abort'
+    when: "item.item.size > 250000"
+    with_items: "{{ files_size.results }}"
+
+
+  - name: Creating -cfg configmaps
     shell: kubectl create configmap {{ (domain) | replace('_','-') | lower }}-cfg-{{ item.path | basename | splitext | first }} --from-file="{{ item.path }}" --dry-run="client" --output="yaml" > {{zip_url }}/{{ item.path | basename | splitext | first  }}-cfg.yaml
     loop: "{{ config_files.files|flatten(levels=1) }}"
 
@@ -91,11 +109,13 @@
       path: "{{ zip_url }}/{{ domain }}-cfg.yaml"
       regexp: '-init.cfg'
       replace: "-ini.cfg"
-    when: init_exists.stat.exists 
+    when: init_exists.stat.exists
 
   - name: Creating -local configmap
     shell: kubectl create configmap {{ (domain) | replace('_','-') | lower }}-local --from-file="{{zip_url }}/{{ domain}}-local.tar.gz" --dry-run="client" --output="yaml" > {{zip_url }}/{{ domain }}-local.yaml
     when: local_exists.stat.exists
+  
+
 
   - name: Creating git directory
     ansible.builtin.file:
